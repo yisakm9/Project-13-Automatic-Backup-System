@@ -8,10 +8,14 @@ terraform {
       version = "~> 6.0"
     }
 
-    
+     random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
   }
+  
 }
 
 provider "aws" {
-  region =  "us-east-1"
+  region = var.aws_region_primary
 }
