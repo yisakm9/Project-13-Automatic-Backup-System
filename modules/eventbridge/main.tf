@@ -20,7 +20,8 @@ resource "aws_cloudwatch_event_target" "sqs_queue" {
 
 # IAM policy to allow EventBridge to send messages to the SQS queue
 resource "aws_sqs_queue_policy" "eventbridge_to_sqs" {
-  queue_url = var.target_arn # Note: The target_arn is also the queue URL/ID for SQS
+  
+  queue_url = var.sqs_target_queue_url
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -28,7 +29,7 @@ resource "aws_sqs_queue_policy" "eventbridge_to_sqs" {
         Effect    = "Allow",
         Principal = { "Service" : "events.amazonaws.com" },
         Action    = "sqs:SendMessage",
-        Resource  = var.target_arn,
+        Resource  = var.target_arn, 
         Condition = {
           ArnEquals = { "aws:SourceArn" = aws_cloudwatch_event_rule.s3_creation_rule.arn }
         }

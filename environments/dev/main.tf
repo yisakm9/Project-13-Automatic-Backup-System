@@ -81,6 +81,9 @@ module "eventbridge_s3_trigger" {
   rule_name        = "${var.project_name}-s3-upload-trigger-${var.environment}"
   event_source_arn = module.s3_backup_buckets.primary_bucket_arn
   target_arn       = module.sqs_queues.main_queue_arn
+
+  sqs_target_queue_url = module.sqs_queues.main_queue_id
+
   tags = {
     Project     = var.project_name
     Environment = var.environment
