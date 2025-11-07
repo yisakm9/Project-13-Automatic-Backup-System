@@ -1,0 +1,64 @@
+name: 'Deploy Terraform Infrastructure'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**' # Only run when Terraform code changes
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+permissions:
+  id-token: write # Required for OIDC authentication
+  contents: read # Required to check out the repository code
+
+env:
+  TF_WORKING_DIR: 'terraform/environments/dev'
+  AWS_REGION: 'us-east-1' # Your primary AWS region
+
+jobs:
+  terraform:
+    name: 'Terraform Deploy'
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS credentials using OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActionsTerraformSession
+
+      # Step 3: Setup Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.4" # Pin to a specific version for consistency
+
+      # Step 4: Terraform Init
+      # Initializes the Terraform working directory and downloads providers.
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      # Step 5: Terraform Plan
+      # Generates an execution plan to preview the changes.
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      # Step 6: Terraform Apply
+      # Applies the changes to the infrastructure. The -auto-approve flag is
+      # critical for running in a non-interactive CI/CD environment.
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
