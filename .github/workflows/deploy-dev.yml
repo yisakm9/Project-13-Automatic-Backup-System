@@ -13,7 +13,7 @@ permissions:
   contents: read # Required to check out the repository code
 
 env:
-  TF_WORKING_DIR: 'terraform/environments/dev'
+  TF_WORKING_DIR: 'environments/dev'
   AWS_REGION: 'us-east-1' # Your primary AWS region
 
 jobs:
