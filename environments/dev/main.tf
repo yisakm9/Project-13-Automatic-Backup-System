@@ -1,4 +1,4 @@
-# Resource to generate a unique suffix for S3 buckets
+ # Resource to generate a unique suffix for S3 buckets
 resource "random_pet" "suffix" {
   length = 2
 }
