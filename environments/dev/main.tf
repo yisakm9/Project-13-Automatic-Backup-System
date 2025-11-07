@@ -27,7 +27,7 @@ module "iam_checksum_validator" {
   ]
 
   
-  sqs_consume_queue_arns = [module.sqs.validation_queue_arn]
+  sqs_consume_queue_arns = [module.sqs_queues.main_queue_arn]
 
   tags = {
     Project     = var.project_name
@@ -42,7 +42,7 @@ module "iam_failure_notifier" {
   role_name = "${var.project_name}-failure-notifier-role-${var.environment}"
 
   
-   sqs_consume_queue_arns = [module.sqs.failure_queue_arn]
+  sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
   # sns_publish_topic_arns = [module.sns.failure_topic_arn]
 
   tags = {
