@@ -126,23 +126,25 @@ resource "aws_s3_bucket_replication_configuration" "primary" {
   bucket     = aws_s3_bucket.primary.id
 
   rule {
-    id       = "primary-to-replica"
-    priority = 1
-    status   = "Enabled"
+    id     = "primary-to-replica"
+    status = "Enabled"
 
-    # The delete_marker_replication block has been removed to align with the V2 schema.
-    # Delete marker replication is now enabled by default when versioning is active on both buckets.
+    # Per API requirements, this block must be specified.
+    # Enabling it ensures that when an object is deleted from the primary bucket,
+    # the corresponding delete marker is replicated to the replica bucket,
+    # keeping the buckets in sync for DR purposes.
+    delete_marker_replication {
+      status = "Enabled"
+    }
 
     destination {
       bucket = aws_s3_bucket.replica.arn
-      # The storage_class attribute is not needed here in the V2 schema for standard replication.
     }
 
-    # By default, everything is replicated. To be explicit:
+    # An empty filter block tells the rule to apply to all objects in the bucket.
     filter {}
   }
 }
-
 resource "aws_s3_bucket_lifecycle_configuration" "primary" {
   bucket = aws_s3_bucket.primary.id
   rule {
