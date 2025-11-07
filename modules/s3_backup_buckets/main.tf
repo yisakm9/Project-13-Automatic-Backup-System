@@ -129,13 +129,17 @@ resource "aws_s3_bucket_replication_configuration" "primary" {
     id       = "primary-to-replica"
     priority = 1
     status   = "Enabled"
-    delete_marker_replication {
-      status = "Disabled"
-    }
+
+    # The delete_marker_replication block has been removed to align with the V2 schema.
+    # Delete marker replication is now enabled by default when versioning is active on both buckets.
+
     destination {
-      bucket        = aws_s3_bucket.replica.arn
-      storage_class = "STANDARD"
+      bucket = aws_s3_bucket.replica.arn
+      # The storage_class attribute is not needed here in the V2 schema for standard replication.
     }
+
+    # By default, everything is replicated. To be explicit:
+    filter {}
   }
 }
 
