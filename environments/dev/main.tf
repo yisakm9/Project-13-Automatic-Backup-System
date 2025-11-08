@@ -43,7 +43,7 @@ module "iam_failure_notifier" {
 
   
   sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
-  sns_publish_topic_arns = [module.sns.failure_topic_arn]
+  sns_publish_topic_arns = [module.sns_failure_topic.topic_arn]
 
   tags = {
     Project     = var.project_name
