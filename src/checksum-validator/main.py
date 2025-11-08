@@ -2,6 +2,7 @@ import json
 import boto3
 import os
 import logging
+from botocore.exceptions import ClientError # Import ClientError
 
 # Configure logging
 logger = logging.getLogger()
@@ -17,13 +18,22 @@ if not REPLICA_AWS_REGION:
 s3_replica_client = boto3.client('s3', region_name=REPLICA_AWS_REGION)
 
 def get_s3_object_etag(s3, bucket, key):
-    """Fetches the ETag of an S3 object."""
+    """Fetches the ETag of an S3 object, handling 'Not Found' errors gracefully."""
     try:
         response = s3.head_object(Bucket=bucket, Key=key)
-        # ETag is returned with quotes, which need to be stripped
         return response['ETag'].strip('"')
+    except ClientError as e:
+        # This is the expected race condition: the replica is not there yet.
+        if e.response['Error']['Code'] == '404':
+            logger.warning(f"Object not found yet in s3://{bucket}/{key}. This is expected during replication lag.")
+            # We return None, and the handler will raise an exception to trigger the SQS retry.
+            return None
+        else:
+            # For other errors like permissions (403), log as an error and let it fail.
+            logger.error(f"A ClientError occurred for s3://{bucket}/{key}: {str(e)}")
+            return None
     except Exception as e:
-        logger.error(f"Error getting ETag for s3://{bucket}/{key}: {str(e)}")
+        logger.error(f"An unexpected error occurred getting ETag for s3://{bucket}/{key}: {str(e)}")
         return None
 
 def handler(event, context):
@@ -35,40 +45,33 @@ def handler(event, context):
 
     for record in event['Records']:
         try:
-            # The actual S3 event is a JSON string in the SQS message body
             sqs_body = json.loads(record['body'])
             s3_detail = sqs_body['detail']
 
             primary_bucket = s3_detail['bucket']['name']
             object_key = s3_detail['object']['key']
             
-            # Construct replica bucket name based on convention
-            # Assumes 'primary' is replaced with 'replica'
             replica_bucket = primary_bucket.replace("primary", "replica")
 
             logger.info(f"Processing object s3://{primary_bucket}/{object_key}")
             logger.info(f"Replica bucket identified as: {replica_bucket}")
 
-            # Get ETags for both primary and replica objects
             primary_etag = get_s3_object_etag(s3_client, primary_bucket, object_key)
             replica_etag = get_s3_object_etag(s3_replica_client, replica_bucket, object_key)
 
             if not primary_etag or not replica_etag:
-                # Failure will be handled by the DLQ after retries
-                raise ValueError("Could not retrieve ETag for one or both objects.")
+                # This will be triggered if the replica is not found yet.
+                # Re-raising the error signals SQS to retry the message.
+                raise ValueError("Could not retrieve ETag for one or both objects. Will retry.")
 
             if primary_etag == replica_etag:
                 logger.info(f"SUCCESS: Checksum validation passed for {object_key}. ETag: {primary_etag}")
-                # In a more advanced workflow, you might delete the message here,
-                # but the SQS-Lambda integration handles this automatically on success.
             else:
                 logger.error(f"FAILURE: Checksum mismatch for {object_key}. Primary: {primary_etag}, Replica: {replica_etag}")
-                # This will cause the function to error out, triggering SQS retries and eventually the DLQ
                 raise ValueError(f"Checksum validation failed for {object_key}")
 
         except Exception as e:
             logger.error(f"Error processing SQS record: {str(e)}")
-            # Re-raise the exception to signal failure to the SQS-Lambda integration
             raise e
             
     return {
