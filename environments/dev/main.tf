@@ -90,3 +90,22 @@ module "eventbridge_s3_trigger" {
     ManagedBy   = "Terraform"
   }
 }
+
+# Deploy the Checksum Validator Lambda function
+module "lambda_checksum_validator" {
+  source           = "../../modules/lambda_functions"
+  function_name    = "${var.project_name}-checksum-validator-${var.environment}"
+  source_code_path = "${path.root}/../../src/checksum-validator" 
+  iam_role_arn     = module.iam_checksum_validator.role_arn
+  sqs_trigger_arn  = module.sqs_queues.main_queue_arn
+
+  environment_variables = {
+    REPLICA_AWS_REGION = var.aws_region_replica
+  }
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
