@@ -177,3 +177,15 @@ resource "aws_s3_bucket_lifecycle_configuration" "replica" {
     }
   }
 }
+
+
+
+resource "aws_s3_bucket_notification" "primary_eventbridge_notification" {
+  bucket = aws_s3_bucket.primary.id
+
+  # This block explicitly enables sending notifications for all events to EventBridge
+  eventbridge = true
+
+  # We depend on the public access block to ensure all security settings are applied first
+  depends_on = [aws_s3_bucket_public_access_block.primary]
+}
