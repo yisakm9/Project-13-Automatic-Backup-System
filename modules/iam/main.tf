@@ -53,14 +53,22 @@ resource "aws_iam_policy" "s3_read" {
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = [
+      # Allows actions on the objects themselves (e.g., get, head)
       {
         Action = [
           "s3:GetObject",
-          "s3:GetObjectVersion"
+          "s3:GetObjectVersion",
+          "s3:HeadObject" 
         ]
         Effect   = "Allow"
         Resource = [for arn in var.s3_read_bucket_arns : "${arn}/*"]
       },
+      # Allows listing the contents of the buckets
+      {
+        Action   = "s3:ListBucket"
+        Effect   = "Allow"
+        Resource = var.s3_read_bucket_arns
+      }
     ]
   })
 }
