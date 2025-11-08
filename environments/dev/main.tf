@@ -43,7 +43,7 @@ module "iam_failure_notifier" {
 
   
   sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
-  # sns_publish_topic_arns = [module.sns.failure_topic_arn]
+  sns_publish_topic_arns = [module.sns.failure_topic_arn]
 
   tags = {
     Project     = var.project_name
@@ -108,4 +108,40 @@ module "lambda_checksum_validator" {
     Environment = var.environment
     ManagedBy   = "Terraform"
   }
+}
+# Deploy the Failure Notifier Lambda function
+module "lambda_failure_notifier" {
+  source           = "../../modules/lambda_functions"
+  function_name    = "${var.project_name}-failure-notifier-${var.environment}"
+  source_code_path = "${path.root}/../../src/failure-notifier"
+  iam_role_arn     = module.iam_failure_notifier.role_arn
+  sqs_trigger_arn  = module.sqs_failure_queues.main_queue_arn
+
+  environment_variables = {
+    SNS_TOPIC_ARN = module.sns_failure_topic.topic_arn
+  }
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+# SNS Topic for failure notifications
+module "sns_failure_topic" {
+  source     = "../../modules/sns"
+  topic_name = "${var.project_name}-failure-topic-${var.environment}"
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+# SNS Email Subscription for alerts
+resource "aws_sns_topic_subscription" "email_target" {
+  topic_arn = module.sns_failure_topic.topic_arn
+  protocol  = "email"
+  
+  endpoint  = "yisakmesifin@gmail.com"
 }
