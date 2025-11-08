@@ -1,23 +1,29 @@
-name: 'Deploy Terraform Infrastructure'
+name: 'Terraform CI/CD'
 
 on:
   push:
     branches:
       - main
-     
-  workflow_dispatch: # Allows manual triggering of the workflow
+    
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'environments/dev/**'
+  workflow_dispatch:
 
 permissions:
-  id-token: write # Required for OIDC authentication
-  contents: read # Required to check out the repository code
+  id-token: write   # Required for OIDC
+  contents: read    # Required to checkout code
+  pull-requests: write # Required to post plan comments on PRs
 
 env:
   TF_WORKING_DIR: 'environments/dev'
-  AWS_REGION: 'us-east-1' # Your primary AWS region
+  AWS_REGION: 'us-east-1'
 
 jobs:
   terraform:
-    name: 'Terraform Deploy'
+    name: 'Terraform'
     runs-on: ubuntu-latest
     environment: development
 
@@ -38,26 +44,55 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.13.4" # Pin to a specific version for consistency
-
+          terraform_version: "1.13.4"
+          
       # Step 4: Terraform Init
-      # Initializes the Terraform working directory and downloads providers.
       - name: Terraform Init
         id: init
         run: terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
-
-      # Step 5: Terraform Plan
-      # Generates an execution plan to preview the changes.
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -input=false
+        
+      # Step 5: Terraform Format Check
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt --check
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      # Step 6: Terraform Apply
-      # Applies the changes to the infrastructure. The -auto-approve flag is
-      # critical for running in a non-interactive CI/CD environment.
+      # Step 6: Terraform Validate
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      # Step 7: Terraform Plan
+      # A plan is always generated, regardless of the event.
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -no-color
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true # Continue so the plan can be commented on PRs even if it fails
+
+      # Step 8: Post Plan as PR Comment (only for Pull Requests)
+      - name: Post Terraform Plan to PR
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Plan 📖\`
+            \`\`\`terraform\n
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            `;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+            
+      # Step 9: Terraform Apply (only on push to main)
       - name: Terraform Apply
-        id: apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.plan.outcome == 'success'
         run: terraform apply -auto-approve -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}
