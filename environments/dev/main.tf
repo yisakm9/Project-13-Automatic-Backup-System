@@ -3,37 +3,61 @@ resource "random_pet" "suffix" {
   length = 2
 }
 
-module "s3_backup_buckets" {
+# --- BUCKET DEFINITIONS ---
+# Instantiate the S3 module three times, one for each category.
+
+module "s3_documents_buckets" {
   source = "../../modules/s3_backup_buckets"
 
-  primary_bucket_name = "${var.project_name}-primary-${var.environment}-${random_pet.suffix.id}"
-  replica_bucket_name = "${var.project_name}-replica-${var.environment}-${random_pet.suffix.id}"
+  primary_bucket_name = "${var.project_name}-documents-primary-${var.environment}-${random_pet.suffix.id}"
+  replica_bucket_name = "${var.project_name}-documents-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
 
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = { Project = var.project_name, Environment = var.environment, Category = "Documents", ManagedBy = "Terraform" }
 }
-# IAM role for the Checksum Validator Lambda function
+
+module "s3_media_buckets" {
+  source = "../../modules/s3_backup_buckets"
+
+  primary_bucket_name = "${var.project_name}-media-primary-${var.environment}-${random_pet.suffix.id}"
+  replica_bucket_name = "${var.project_name}-media-replica-${var.environment}-${random_pet.suffix.id}"
+  aws_region_replica  = var.aws_region_replica
+
+  tags = { Project = var.project_name, Environment = var.environment, Category = "Media", ManagedBy = "Terraform" }
+}
+
+module "s3_database_buckets" {
+  source = "../../modules/s3_backup_buckets"
+
+  primary_bucket_name = "${var.project_name}-database-primary-${var.environment}-${random_pet.suffix.id}"
+  replica_bucket_name = "${var.project_name}-database-replica-${var.environment}-${random_pet.suffix.id}"
+  aws_region_replica  = var.aws_region_replica
+
+  tags = { Project = var.project_name, Environment = var.environment, Category = "Database", ManagedBy = "Terraform" }
+}
+# --- IAM ROLES ---
+# Update IAM roles to have permissions across all new buckets.
+
 module "iam_checksum_validator" {
   source    = "../../modules/iam"
   role_name = "${var.project_name}-checksum-validator-role-${var.environment}"
 
-  s3_read_bucket_arns = [
-    module.s3_backup_buckets.primary_bucket_arn,
-    module.s3_backup_buckets.replica_bucket_arn
-  ]
+  # Use concat() to create a single list of all six bucket ARNs
+  s3_read_bucket_arns = concat(
+    [
+      module.s3_documents_buckets.primary_bucket_arn,
+      module.s3_media_buckets.primary_bucket_arn,
+      module.s3_database_buckets.primary_bucket_arn,
+    ],
+    [
+      module.s3_documents_buckets.replica_bucket_arn,
+      module.s3_media_buckets.replica_bucket_arn,
+      module.s3_database_buckets.replica_bucket_arn,
+    ]
+  )
 
-  
   sqs_consume_queue_arns = [module.sqs_queues.main_queue_arn]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags                   = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }
 
 # IAM role for the Failure Notifier Lambda function
@@ -79,11 +103,14 @@ module "sqs_failure_queues" {
 module "eventbridge_s3_trigger" {
   source           = "../../modules/eventbridge"
   rule_name        = "${var.project_name}-s3-upload-trigger-${var.environment}"
-  event_source_arn = module.s3_backup_buckets.primary_bucket_arn
   target_arn       = module.sqs_queues.main_queue_arn
-
   sqs_target_queue_url = module.sqs_queues.main_queue_id
-
+  # Pass a list of all primary bucket ARNs to monitor
+  event_source_arns = [
+    module.s3_documents_buckets.primary_bucket_arn,
+    module.s3_media_buckets.primary_bucket_arn,
+    module.s3_database_buckets.primary_bucket_arn,
+  ]
   tags = {
     Project     = var.project_name
     Environment = var.environment

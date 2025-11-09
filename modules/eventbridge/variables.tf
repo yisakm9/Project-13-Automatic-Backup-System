@@ -8,9 +8,9 @@ variable "sqs_target_queue_url" {
   description = "The URL of the target SQS queue, required for setting the queue policy."
   type        = string
 }
-variable "event_source_arn" {
-  description = "The ARN of the resource that is the source of the event (e.g., S3 bucket ARN)."
-  type        = string
+variable "event_source_arns" {
+  description = "A list of ARNs for the resources that are the source of the event."
+  type        = list(string)
 }
 
 variable "target_arn" {
