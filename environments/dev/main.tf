@@ -2,13 +2,19 @@
 resource "random_pet" "suffix" {
   length = 2
 }
-
+provider "aws" {
+  alias  = "replica"
+  region = var.aws_region_replica
+}
 # --- BUCKET DEFINITIONS ---
 # Instantiate the S3 module three times, one for each category.
 
 module "s3_documents_buckets" {
   source = "../../modules/s3_backup_buckets"
-
+ # Pass the replica provider to the module
+  providers = {
+    aws.replica = aws.replica
+  }
   primary_bucket_name = "${var.project_name}-documents-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-documents-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
@@ -18,7 +24,9 @@ module "s3_documents_buckets" {
 
 module "s3_media_buckets" {
   source = "../../modules/s3_backup_buckets"
-
+  providers = {
+    aws.replica = aws.replica
+  }
   primary_bucket_name = "${var.project_name}-media-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-media-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
@@ -28,7 +36,9 @@ module "s3_media_buckets" {
 
 module "s3_database_buckets" {
   source = "../../modules/s3_backup_buckets"
-
+  providers = {
+    aws.replica = aws.replica
+  }
   primary_bucket_name = "${var.project_name}-database-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-database-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
