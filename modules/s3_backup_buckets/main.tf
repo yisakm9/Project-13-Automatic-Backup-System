@@ -2,11 +2,6 @@
 # This module creates a primary and a replica S3 bucket with versioning,
 # encryption, public access blocked, lifecycle policies, and cross-region replication.
 
-provider "aws" {
-  alias  = "replica"
-  region = var.aws_region_replica
-}
-
 resource "aws_s3_bucket" "primary" {
   bucket = var.primary_bucket_name
   tags   = var.tags
