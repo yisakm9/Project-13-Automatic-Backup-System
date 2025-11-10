@@ -6,7 +6,7 @@ provider "aws" {
   alias  = "replica"
   region = var.aws_region_replica
 }
-# --- BUCKET DEFINITIONS ---
+#  BUCKET DEFINITIONS 
 # Instantiate the S3 module three times, one for each category.
 
 module "s3_documents_buckets" {
