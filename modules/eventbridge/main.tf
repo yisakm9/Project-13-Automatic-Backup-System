@@ -7,7 +7,7 @@ resource "aws_cloudwatch_event_rule" "s3_creation_rule" {
   event_pattern = jsonencode({
     "source" : ["aws.s3"],
     "detail-type" : ["Object Created"],
-    "resources" : [var.event_source_arns]
+     "resources"   = var.event_source_arns
   })
   tags = var.tags
 }
