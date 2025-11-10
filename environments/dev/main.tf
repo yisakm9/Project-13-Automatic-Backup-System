@@ -15,6 +15,7 @@ module "s3_documents_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  rule_id_prefix      = "documents"
   primary_bucket_name = "${var.project_name}-documents-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-documents-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
@@ -27,6 +28,7 @@ module "s3_media_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  rule_id_prefix      = "media"
   primary_bucket_name = "${var.project_name}-media-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-media-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica
@@ -39,6 +41,7 @@ module "s3_database_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  rule_id_prefix      = "database"
   primary_bucket_name = "${var.project_name}-database-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-database-replica-${var.environment}-${random_pet.suffix.id}"
   aws_region_replica  = var.aws_region_replica

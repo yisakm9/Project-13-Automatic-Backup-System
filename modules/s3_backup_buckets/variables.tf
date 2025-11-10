@@ -32,3 +32,7 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+variable "rule_id_prefix" {
+  description = "A unique prefix for the replication and lifecycle rule IDs."
+  type        = string
+}

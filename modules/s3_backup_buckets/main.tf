@@ -121,7 +121,7 @@ resource "aws_s3_bucket_replication_configuration" "primary" {
   bucket     = aws_s3_bucket.primary.id
 
   rule {
-    id     = "primary-to-replica"
+    id       = "${var.rule_id_prefix}-replication-rule"
     status = "Enabled"
 
     # Per API requirements, this block must be specified.
@@ -143,7 +143,7 @@ resource "aws_s3_bucket_replication_configuration" "primary" {
 resource "aws_s3_bucket_lifecycle_configuration" "primary" {
   bucket = aws_s3_bucket.primary.id
   rule {
-    id     = "backup-lifecycle-rule"
+    id     = "${var.rule_id_prefix}-lifecycle-rule"
     status = "Enabled"
 
     noncurrent_version_transition {
@@ -160,7 +160,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "replica" {
   provider = aws.replica
   bucket   = aws_s3_bucket.replica.id
   rule {
-    id     = "backup-lifecycle-rule"
+    id     = "${var.rule_id_prefix}-lifecycle-rule"
     status = "Enabled"
 
     noncurrent_version_transition {
