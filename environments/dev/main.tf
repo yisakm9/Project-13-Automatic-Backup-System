@@ -15,6 +15,7 @@ module "s3_documents_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  eventbridge_rule_arn = module.eventbridge_s3_trigger.rule_arn
   rule_id_prefix      = "documents"
   primary_bucket_name = "${var.project_name}-documents-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-documents-replica-${var.environment}-${random_pet.suffix.id}"
@@ -28,6 +29,7 @@ module "s3_media_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  eventbridge_rule_arn = module.eventbridge_s3_trigger.rule_arn
   rule_id_prefix      = "media"
   primary_bucket_name = "${var.project_name}-media-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-media-replica-${var.environment}-${random_pet.suffix.id}"
@@ -41,6 +43,7 @@ module "s3_database_buckets" {
   providers = {
     aws.replica = aws.replica
   }
+  eventbridge_rule_arn = module.eventbridge_s3_trigger.rule_arn
   rule_id_prefix      = "database"
   primary_bucket_name = "${var.project_name}-database-primary-${var.environment}-${random_pet.suffix.id}"
   replica_bucket_name = "${var.project_name}-database-replica-${var.environment}-${random_pet.suffix.id}"

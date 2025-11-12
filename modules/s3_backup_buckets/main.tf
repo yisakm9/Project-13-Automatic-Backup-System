@@ -188,5 +188,10 @@ resource "aws_s3_bucket_notification" "primary_eventbridge_notification" {
   eventbridge = true
 
   # We depend on the public access block to ensure all security settings are applied first
-  depends_on = [aws_s3_bucket_public_access_block.primary]
+  # CORRECTED: Add an explicit dependency on the EventBridge rule.
+  # This forces Terraform to create the EventBridge rule *before* configuring this notification.
+  depends_on = [
+    aws_s3_bucket_public_access_block.primary,
+    var.eventbridge_rule_arn # The variable itself acts as the dependency link
+  ]
 }
