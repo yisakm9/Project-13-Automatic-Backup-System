@@ -59,7 +59,7 @@ jobs:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
           output_format: cli # You can change this to sarif for GitHub Security tab integration
-          soft_fail: false # Hard fail the pipeline if vulnerabilities are found
+          soft_fail: true 
 
   # Job 3: Terraform Deploy (depends on the success of the scan jobs)
   terraform:

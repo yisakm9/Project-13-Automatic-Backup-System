@@ -138,6 +138,8 @@ module "lambda_checksum_validator" {
   source_code_path = "${path.root}/../../src/checksum-validator" 
   iam_role_arn     = module.iam_checksum_validator.role_arn
   sqs_trigger_arn  = module.sqs_queues.main_queue_arn
+  # REMEDIATION: Pass the failure queue as the Lambda's DLQ
+  lambda_dlq_arn   = module.sqs_failure_queues.main_queue_arn
 
   environment_variables = {
     REPLICA_AWS_REGION = var.aws_region_replica
@@ -156,7 +158,8 @@ module "lambda_failure_notifier" {
   source_code_path = "${path.root}/../../src/failure-notifier"
   iam_role_arn     = module.iam_failure_notifier.role_arn
   sqs_trigger_arn  = module.sqs_failure_queues.main_queue_arn
-
+# REMEDIATION: Pass its own DLQ as the Lambda's DLQ
+  lambda_dlq_arn   = module.sqs_failure_queues.dlq_arn
   environment_variables = {
     SNS_TOPIC_ARN = module.sns_failure_topic.topic_arn
   }

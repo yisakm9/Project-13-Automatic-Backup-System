@@ -41,3 +41,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "lambda_dlq_arn" {
+  description = "The ARN of the SQS queue to use as a Dead Letter Queue for the Lambda function itself."
+  type        = string
+  default     = null # Make it optional
+}
+
+variable "reserved_concurrent_executions" {
+  description = "The number of concurrent executions to reserve for the function."
+  type        = number
+  default     = 10 # A safe default
+}

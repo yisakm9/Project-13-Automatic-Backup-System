@@ -145,6 +145,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "primary" {
   rule {
     id     = "${var.rule_id_prefix}-lifecycle-rule"
     status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
 
     noncurrent_version_transition {
       noncurrent_days = var.transition_to_glacier_ir_days
@@ -162,6 +165,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "replica" {
   rule {
     id     = "${var.rule_id_prefix}-lifecycle-rule"
     status = "Enabled"
+     abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
 
     noncurrent_version_transition {
       noncurrent_days = var.transition_to_glacier_ir_days
