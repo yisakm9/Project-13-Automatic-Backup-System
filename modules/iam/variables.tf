@@ -23,6 +23,11 @@ variable "sns_publish_topic_arns" {
   default     = []
 }
 
+variable "sqs_dlq_send_arns" {
+  description = "A list of SQS queue ARNs to which the Lambda service can send messages for DLQ purposes."
+  type        = list(string)
+  default     = []
+}
 variable "tags" {
   description = "A map of tags to assign to the resources."
   type        = map(string)

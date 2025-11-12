@@ -128,3 +128,26 @@ resource "aws_iam_role_policy_attachment" "sns_publish" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.sns_publish[0].arn
 }
+
+# Conditional policy for SQS DLQ send access
+resource "aws_iam_policy" "sqs_dlq_send" {
+  count       = length(var.sqs_dlq_send_arns) > 0 ? 1 : 0
+  name        = "${var.role_name}-sqs-dlq-send-policy"
+  description = "Allows sending messages to specified SQS queues for DLQ."
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action   = "sqs:SendMessage"
+        Effect   = "Allow"
+        Resource = var.sqs_dlq_send_arns
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "sqs_dlq_send" {
+  count      = length(var.sqs_dlq_send_arns) > 0 ? 1 : 0
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.sqs_dlq_send[0].arn
+}

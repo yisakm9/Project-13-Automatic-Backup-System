@@ -68,7 +68,7 @@ module "iam_checksum_validator" {
       module.s3_database_buckets.replica_bucket_arn,
     ]
   )
-
+  sqs_dlq_send_arns = [module.sqs_failure_queues.main_queue_arn]
   sqs_consume_queue_arns = [module.sqs_queues.main_queue_arn]
   tags                   = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }
@@ -81,7 +81,7 @@ module "iam_failure_notifier" {
   
   sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
   sns_publish_topic_arns = [module.sns_failure_topic.topic_arn]
-
+  sqs_dlq_send_arns      = [module.sqs_failure_queues.dlq_arn]
   tags = {
     Project     = var.project_name
     Environment = var.environment

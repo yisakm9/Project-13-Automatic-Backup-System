@@ -30,7 +30,7 @@ resource "aws_lambda_function" "this" {
   }
 
   # REMEDIATION for CKV_AWS_173
-  kms_key_arn = "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:alias/aws/lambda"
+  kms_key_arn = "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:alias/aws/lambda"
 
   # REMEDIATION for CKV_AWS_115
   reserved_concurrent_executions = var.reserved_concurrent_executions
