@@ -73,6 +73,7 @@ module "iam_checksum_validator" {
   )
   sqs_dlq_send_arns = [module.sqs_failure_queues.main_queue_arn]
   sqs_consume_queue_arns = [module.sqs_queues.main_queue_arn]
+  kms_usage_key_arns     = [module.kms_sqs_key.key_arn]
   tags                   = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }
 
