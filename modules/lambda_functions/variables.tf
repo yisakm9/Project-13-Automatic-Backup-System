@@ -51,5 +51,5 @@ variable "lambda_dlq_arn" {
 variable "reserved_concurrent_executions" {
   description = "The number of concurrent executions to reserve for the function."
   type        = number
-  default     = 10 # A safe default
+  default     = 2 # A safe default
 }
