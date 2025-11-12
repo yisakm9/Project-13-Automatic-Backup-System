@@ -28,6 +28,11 @@ variable "sqs_dlq_send_arns" {
   type        = list(string)
   default     = []
 }
+variable "kms_usage_key_arns" {
+  description = "A list of KMS Key ARNs that the role needs permission to use."
+  type        = list(string)
+  default     = []
+}
 variable "tags" {
   description = "A map of tags to assign to the resources."
   type        = map(string)

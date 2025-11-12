@@ -33,6 +33,22 @@ resource "aws_kms_key" "this" {
           "kms:Decrypt"
         ],
         Resource = "*" # Resource must be "*" for key usage permissions
+      },
+  # Statement 3: Allows specified IAM roles to use the key for encryption/decryption
+      {
+        Sid    = "AllowIAMRolesToUseKey",
+        Effect = "Allow",
+        Principal = {
+          AWS = var.iam_role_arns_for_usage
+        },
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        Resource = "*"
       }
     ]
   })

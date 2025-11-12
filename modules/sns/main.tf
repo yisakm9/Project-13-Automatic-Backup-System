@@ -1,5 +1,5 @@
 resource "aws_sns_topic" "this" {
   name = var.topic_name
   tags = var.tags
-  kms_master_key_id = "alias/aws/sns"
+  kms_master_key_id = var.kms_key_arn
 }

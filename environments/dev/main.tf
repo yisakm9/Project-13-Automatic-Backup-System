@@ -85,6 +85,8 @@ module "iam_failure_notifier" {
   sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
   sns_publish_topic_arns = [module.sns_failure_topic.topic_arn]
   sqs_dlq_send_arns      = [module.sqs_failure_queues.dlq_arn]
+  kms_usage_key_arns     = [module.kms_sns_key.key_arn]
+
   tags = {
     Project     = var.project_name
     Environment = var.environment
@@ -179,6 +181,7 @@ module "lambda_failure_notifier" {
 module "sns_failure_topic" {
   source     = "../../modules/sns"
   topic_name = "${var.project_name}-failure-topic-${var.environment}"
+  kms_key_arn = module.kms_sns_key.key_arn
   tags = {
     Project     = var.project_name
     Environment = var.environment
@@ -197,8 +200,21 @@ module "kms_sqs_key" {
   source    = "../../modules/kms"
   key_alias = "${var.project_name}-sqs-key-${var.environment}"
   
-  # This is the critical part that grants EventBridge permission
-  service_principals_for_encryption = ["events.amazonaws.com"]
+  # Grant EventBridge AND Lambda permission to use this key
+  service_principals_for_encryption = [
+    "events.amazonaws.com",
+    "lambda.amazonaws.com"
+  ]
+
+  tags = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
+}
+# ADD THIS NEW MODULE: A dedicated key for SNS
+module "kms_sns_key" {
+  source    = "../../modules/kms"
+  key_alias = "${var.project_name}-sns-key-${var.environment}"
+  
+  # Grant the failure-notifier Lambda's role permission to use this key
+  iam_role_arns_for_usage = [module.iam_failure_notifier.role_arn]
 
   tags = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }

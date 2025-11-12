@@ -151,3 +151,31 @@ resource "aws_iam_role_policy_attachment" "sqs_dlq_send" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.sqs_dlq_send[0].arn
 }
+
+resource "aws_iam_policy" "kms_usage" {
+  count       = length(var.kms_usage_key_arns) > 0 ? 1 : 0
+  name        = "${var.role_name}-kms-usage-policy"
+  description = "Allows usage of specified KMS keys."
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Effect   = "Allow"
+        Resource = var.kms_usage_key_arns
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "kms_usage" {
+  count      = length(var.kms_usage_key_arns) > 0 ? 1 : 0
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.kms_usage[0].arn
+}

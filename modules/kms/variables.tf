@@ -8,7 +8,11 @@ variable "service_principals_for_encryption" {
   type        = list(string)
   default     = []
 }
-
+variable "iam_role_arns_for_usage" {
+  description = "A list of IAM Role ARNs that need permission to use this key."
+  type        = list(string)
+  default     = []
+}
 variable "tags" {
   description = "A map of tags to assign to the key."
   type        = map(string)
