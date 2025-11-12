@@ -86,8 +86,10 @@ module "iam_failure_notifier" {
   sqs_consume_queue_arns = [module.sqs_failure_queues.main_queue_arn]
   sns_publish_topic_arns = [module.sns_failure_topic.topic_arn]
   sqs_dlq_send_arns      = [module.sqs_failure_queues.dlq_arn]
-  kms_usage_key_arns     = [module.kms_sns_key.key_arn]
-
+  kms_usage_key_arns     = [
+    module.kms_sns_key.key_arn,
+    module.kms_sqs_key.key_arn  
+  ]
   tags = {
     Project     = var.project_name
     Environment = var.environment
