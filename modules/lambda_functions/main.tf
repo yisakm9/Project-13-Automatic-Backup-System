@@ -4,10 +4,9 @@ data "archive_file" "lambda_zip" {
   source_dir  = var.source_code_path
   output_path = "${path.module}/${var.function_name}.zip"
 }
-
-# Add these data sources
-data "aws_region" "current" {}
-data "aws_caller_identity" "current" {}
+data "aws_kms_alias" "lambda_key" {
+  name = "alias/aws/lambda"
+}
 
 # Lambda function resource
 resource "aws_lambda_function" "this" {
@@ -28,9 +27,8 @@ resource "aws_lambda_function" "this" {
   tracing_config {
     mode = "Active"
   }
-
-  # REMEDIATION for CKV_AWS_173
-  kms_key_arn = "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:alias/aws/lambda"
+ # Use the resolved Key ARN from the data source
+  kms_key_arn = data.aws_kms_alias.lambda_key.target_key_arn
 
   # REMEDIATION for CKV_AWS_115
   reserved_concurrent_executions = var.reserved_concurrent_executions
@@ -40,11 +38,7 @@ resource "aws_lambda_function" "this" {
 
   tags = var.tags 
 
-   # Add data sources to get current region and account ID
-  depends_on = [
-    data.aws_region.current,
-    data.aws_caller_identity.current
-  ]
+   
 }
 
 # SQS Event Source Mapping (the trigger)
