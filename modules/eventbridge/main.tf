@@ -54,7 +54,7 @@ resource "aws_cloudwatch_event_bus_policy" "s3_to_eventbridge" {
           Service = "s3.amazonaws.com"
         },
         Action    = "events:PutEvents",
-        Resource  = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/default",
+        Resource  = "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/default",
         Condition = {
           "ArnLike" = {
             "aws:SourceArn" = [for arn in var.event_source_arns : "${arn}"]
