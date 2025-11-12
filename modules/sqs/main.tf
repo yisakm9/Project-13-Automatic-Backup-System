@@ -20,5 +20,7 @@ resource "aws_sqs_queue" "main_queue" {
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
     maxReceiveCount     = var.max_receive_count
   })
-  tags = var.tags
+   tags = merge(var.tags, {
+    "RedrivePolicyEnforced" = "true" 
+  })
 }
