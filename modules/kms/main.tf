@@ -23,7 +23,7 @@ locals {
 
     # Statement 2 (Conditional): This block is only included if the 'iam_role_arns_for_usage' variable is not empty.
     # It grants specified IAM Roles (like our Lambda execution roles) permission to use the key for cryptographic operations.
-    if length(var.iam_role_arns_for_usage) > 0 : {
+    length(var.iam_role_arns_for_usage) > 0 ? {
       Sid    = "AllowIAMRolesToUseKey",
       Effect = "Allow",
       Principal = {
@@ -37,12 +37,12 @@ locals {
         "kms:DescribeKey"
       ],
       Resource = "*"
-    } else null,
+    } : null,
 
     # Statement 3 (Conditional): This block is only included if the 'service_principals_for_encryption' variable is not empty.
     # It grants specified AWS Services (like EventBridge and Lambda) permission to use the key.
     # This includes 'CreateGrant', which is critical for the Lambda DLQ integration.
-    if length(var.service_principals_for_encryption) > 0 : {
+    length(var.service_principals_for_encryption) > 0 ? {
       Sid    = "AllowServicePrincipalsToUseKey",
       Effect = "Allow",
       Principal = {
@@ -56,7 +56,7 @@ locals {
         "kms:RevokeGrant"
       ],
       Resource = "*"
-    } else null
+    } : null
   ]
 }
 
