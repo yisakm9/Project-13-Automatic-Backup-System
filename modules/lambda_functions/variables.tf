@@ -47,9 +47,10 @@ variable "lambda_dlq_arn" {
   type        = string
   default     = null # Make it optional
 }
-
+/*
 variable "reserved_concurrent_executions" {
   description = "The number of concurrent executions to reserve for the function."
   type        = number
   default     = 2 # A safe default
 }
+*/

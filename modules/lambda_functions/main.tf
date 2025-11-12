@@ -31,7 +31,7 @@ resource "aws_lambda_function" "this" {
   kms_key_arn = data.aws_kms_alias.lambda_key.target_key_arn
 
   # REMEDIATION for CKV_AWS_115
-  reserved_concurrent_executions = var.reserved_concurrent_executions
+  # reserved_concurrent_executions = var.reserved_concurrent_executions
   environment {
     variables = var.environment_variables
   }
