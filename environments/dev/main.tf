@@ -76,7 +76,7 @@ module "iam_checksum_validator" {
   tags                   = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }
 
-# IAM role for the Failure Notifier Lambda function
+#  IAM role for the Failure Notifier Lambda function
 module "iam_failure_notifier" {
   source    = "../../modules/iam"
   role_name = "${var.project_name}-failure-notifier-role-${var.environment}"
