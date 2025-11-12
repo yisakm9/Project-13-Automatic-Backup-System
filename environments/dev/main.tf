@@ -97,6 +97,7 @@ module "sqs_queues" {
   source   = "../../modules/sqs"
   queue_name = "${var.project_name}-validation-queue-${var.environment}"
   dlq_name   = "${var.project_name}-validation-dlq-${var.environment}"
+  kms_key_arn = module.kms_sqs_key.key_arn
   tags = {
     Project     = var.project_name
     Environment = var.environment
@@ -108,6 +109,7 @@ module "sqs_failure_queues" {
   source   = "../../modules/sqs"
   queue_name = "${var.project_name}-failure-queue-${var.environment}"
   dlq_name   = "${var.project_name}-failure-dlq-${var.environment}"
+  kms_key_arn = module.kms_sqs_key.key_arn
   tags = {
     Project     = var.project_name
     Environment = var.environment
@@ -190,4 +192,13 @@ resource "aws_sns_topic_subscription" "email_target" {
   protocol  = "email"
   
   endpoint  = "yisakmesifin@gmail.com"
+}
+module "kms_sqs_key" {
+  source    = "../../modules/kms"
+  key_alias = "${var.project_name}-sqs-key-${var.environment}"
+  
+  # This is the critical part that grants EventBridge permission
+  service_principals_for_encryption = ["events.amazonaws.com"]
+
+  tags = { Project = var.project_name, Environment = var.environment, ManagedBy = "Terraform" }
 }

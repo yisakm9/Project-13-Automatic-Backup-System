@@ -15,7 +15,10 @@ variable "max_receive_count" {
   type        = number
   default     = 3
 }
-
+variable "kms_key_arn" {
+  description = "The ARN of the customer-managed KMS key to use for SQS encryption."
+  type        = string
+}
 variable "tags" {
   description = "A map of tags to assign to the resources."
   type        = map(string)
