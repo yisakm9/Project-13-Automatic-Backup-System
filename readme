@@ -1,0 +1,121 @@
+# Advanced, Event-Driven S3 Backup System on AWS
+
+This project implements a professional-grade, automated, and resilient backup system on AWS for S3 objects. It is built entirely with Infrastructure as Code (IaC) using Terraform and deployed via a secure, automated CI/CD pipeline with GitHub Actions.
+
+The system automatically validates the integrity of backups, provides robust error handling, and enforces security best practices for a production-ready solution.
+
+# Key Features
+
+-   Multi-Bucket Categorization: Supports separate, dedicated backup buckets for different data types (`documents`, `media`, `database`).
+-   Automated Cross-Region Replication (CRR): All uploaded files are automatically replicated to a secondary AWS region for disaster recovery.
+-   Event-Driven & Serverless: Utilizes an entirely event-driven architecture with S3 Events, EventBridge, SQS, and Lambda, eliminating the need for cron jobs or managing servers.
+-   Data Integrity Validation: A Lambda function automatically triggers on every upload to verify that the replicated file is not corrupt by comparing checksums (ETags).
+-   Resilience & Fault Tolerance:
+    *   Leverages SQS queues to buffer events, preventing data loss and managing backpressure.
+    *   Gracefully handles S3 replication lag through an automatic retry mechanism.
+    *   Uses Dead-Letter Queues (DLQs) to isolate and capture un-processable "poison pill" messages for manual investigation.
+-   Automated Security & Best Practices:
+    *   DevSecOps Pipeline: The GitHub Actions pipeline integrates TFLint and Checkov to perform static analysis and security scanning, preventing misconfigurations from being deployed.
+    *   End-to-End Encryption: All resources, including S3 buckets, SQS queues, and SNS topics, are encrypted at rest using Customer-Managed KMS Keys (CMKs). Lambda environment variables are also encrypted.
+    *   Least Privilege IAM: All services operate using fine-grained IAM roles and resource-based policies, ensuring they only have the permissions required for their specific tasks.
+    *   No Public Access: All S3 buckets are configured to block all public access.
+-   Complete CI/CD Automation:
+    *   Infrastructure is managed via a GitOps workflow.
+    *   A production-grade pipeline validates, plans, and deploys all infrastructure changes.
+    *   A separate, manual-trigger workflow is provided for safely destroying the environment.
+
+# Architecture Diagram
+
+[Architecture Diagram] https://github.com/yisakm9/Project-13-Automatic-Backup-System/blob/main/Automatic%20Backup%20System.drawio.png   
+
+
+The workflow is as follows:
+1.  A file is uploaded to one of the three primary S3 buckets (`documents`, `media`, or `database`).
+2.  S3 automatically replicates the object to its corresponding replica bucket in a secondary region.
+3.  The primary bucket's event notification triggers an EventBridge rule.
+4.  EventBridge sends the event message to the SQS `validation-queue` after encrypting it with a CMK.
+5.  The `checksum-validator` Lambda function is triggered by the message, decrypts it, and compares the ETags of the primary and replica objects.
+6.  If validation fails repeatedly or an un-parsable message is received, it is moved to a DLQ.
+7.  An operator can move the message from the DLQ to the `failure-queue`, triggering the `failure-notifier` Lambda, which sends a detailed alert via an SNS topic to a subscribed email address.
+
+# Project Structure
+
+.
+├── .github/
+│ └── workflows/
+│ ├── terraform-deploy.yml # Main deployment pipeline (with scans)
+│ └── terraform-destroy.yml # Manual destruction pipeline
+│
+├── src/
+│ ├── checksum-validator/ # Python code for the validation Lambda
+│ └── failure-notifier/ # Python code for the alerting Lambda
+│
+├─
+│ ├── environments/
+│ │ └── dev/ # Root module for the 'dev' environment
+│ └── modules/ # Reusable Terraform modules
+│ ├── eventbridge/
+│ ├── iam/
+│ ├── kms/
+│ ├── lambda_functions/
+│ ├── s3_backup_buckets/
+│ ├── sns/
+│ └── sqs/
+│
+└── README.md
+
+
+# Getting Started
+
+# Prerequisites
+
+1.  AWS Account: An active AWS account.
+2.  GitHub Repository: A GitHub repository to host the code.
+3.  Terraform Remote State Backend:
+    *   An S3 bucket must be created manually in your AWS account to store the Terraform state file.
+    *   Update the `bucket` name in `terraform/environments/dev/backend.tf` to match your bucket name.
+4.  OIDC Connection for GitHub Actions:
+    *   An IAM Role must be created in your AWS account with `Web identity` trusted, pointing to your GitHub repository. This role needs sufficient permissions to create the resources defined in the Terraform code (e.g., `AdministratorAccess` for simplicity).
+    *   The ARN of this role must be stored as a GitHub repository secret named `AWS_IAM_ROLE_ARN`.
+5.  Email for Notifications:
+    *   Update the placeholder email address in `terraform/environments/dev/main.tf` in the `aws_sns_topic_subscription` resource to the email where you want to receive failure alerts.
+
+# Deployment
+
+This project follows a GitOps workflow. The infrastructure is deployed automatically by the GitHub Actions pipeline.
+
+1.  Clone the repository:
+     bash
+    git clone <https://github.com/yisakm9/Project-13-Automatic-Backup-System>
+    
+2.  Push to `main`:
+    *   Any commit pushed to the `main` branch that includes changes inside the `terraform/` directory will automatically trigger the `Terraform CI/CD` workflow.
+    *   The workflow will first run `tflint` and `checkov` scans. If they pass, it will proceed to `terraform apply` the changes.
+
+# Operations
+
+# Verifying a Successful Backup ("Happy Path")
+
+1.  Upload any file to one of the primary buckets (e.g., `autobackup-documents-primary-dev-...`).
+2.  Navigate to the corresponding replica bucket in the secondary region and confirm the file has been copied.
+3.  Navigate to CloudWatch > Log groups and find the log group `/aws/lambda/autobackup-checksum-validator-dev`.
+4.  Open the latest log stream to find the `SUCCESS: Checksum validation passed...` message. Note that due to replication lag, you may first see a `WARNING` log, followed by a successful retry a few minutes later.
+
+# Testing the Failure and Alerting Path
+
+1.  Navigate to the `autobackup-validation-queue-dev` SQS queue.
+2.  Manually send a "poison pill" message (any non-JSON text).
+3.  After a few minutes, verify the message has been moved to the `autobackup-validation-dlq-dev`.
+4.  From the `autobackup-validation-dlq-dev`, initiate a "DLQ redrive" task, targeting the `autobackup-failure-queue-dev`.
+5.  Check your configured email inbox for the SNS failure alert.
+
+# Destroying the Infrastructure
+
+To avoid incurring costs, the entire environment can be destroyed automatically.
+
+1.  Navigate to the "Actions" tab in your GitHub repository.
+2.  Select the "Destroy Terraform Infrastructure" workflow.
+3.  Click "Run workflow".
+4.  When prompted, type the confirmation phrase `destroy all resources` and run the workflow.
+5.  The pipeline will execute `terraform destroy` and remove all created resources.
+
